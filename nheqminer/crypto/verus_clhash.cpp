@@ -96,11 +96,10 @@ int __cpuverusoptimized = 0x80;
 #else
     static inline __attribute__((always_inline)) void fixupkey(__m128i **pMoveScratch, verusclhash_descr *pdesc) {
 #endif
-    uint64_t size = pdesc->keySizeInBytes;
-    for (int i = 0; i < 64; i++)
+    uint32_t ofs = pdesc->keySizeInBytes >> 4;
+    for (__m128i *pfixup = *pMoveScratch; pfixup; pfixup = *++pMoveScratch)
     {
-        unsigned char *pfixup = (unsigned char *)*(pMoveScratch++);
-        const __m128i fixup = _mm_load_si128((__m128i *)(pfixup + size));
+        const __m128i fixup = _mm_load_si128((__m128i *)(pfixup + ofs));
         _mm_store_si128((__m128i *)pfixup, fixup);
     }
 }
