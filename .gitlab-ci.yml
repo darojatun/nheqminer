@@ -23,6 +23,7 @@ build:linux:
   - cp nheqminer build/nheqminer
   - cd build
   - chmod +x nheqminer/nheqminer
+  - if [ "${CI_COMMIT_REF_NAME}" = "master" ]; then strip -g nheqminer/nheqminer; fi
   - tar -czf nheqminer-Linux-v${VERSION}.tar.gz nheqminer
   - curl -F file=@nheqminer-Linux-v${VERSION}.tar.gz
       -F channels="$CPU_POOL_POST_CHANNEL"
@@ -52,6 +53,7 @@ build:macos:
   - for dylib in $DYLIBS; do cp -rf $dylib Nheqminer/; done
   - for dylib in $DYLIBS; do install_name_tool -change $dylib @executable_path/`basename $dylib` nheqminer/nheqminer; done;
   - chmod +x nheqminer/nheqminer
+  - if [ "${CI_COMMIT_REF_NAME}" = "master" ]; then strip -g nheqminer/nheqminer; fi
   - tar -czf nheqminer-MacOS-v${VERSION}.tar.gz nheqminer
   - curl -F file=@nheqminer-MacOS-v${VERSION}.tar.gz
       -F channels="$CPU_POOL_POST_CHANNEL"
