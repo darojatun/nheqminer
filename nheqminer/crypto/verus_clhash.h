@@ -22,6 +22,7 @@
 
 #ifndef _WIN32
 #include <cpuid.h>
+#include <x86intrin.h>
 #else
 #include <intrin.h>
 #endif // !WIN32
@@ -32,6 +33,9 @@
 #include <assert.h>
 #include <boost/thread.hpp>
 #include "tinyformat.h"
+#ifdef __APPLE__
+void __tls_init();
+#endif
 
 #ifdef __cplusplus
 extern "C" {
