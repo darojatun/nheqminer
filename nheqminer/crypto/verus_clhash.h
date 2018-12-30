@@ -31,6 +31,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include <boost/thread.hpp>
+#include "tinyformat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,6 +131,28 @@ void *alloc_aligned_buffer(uint64_t bufSize);
 
 #include <vector>
 #include <string>
+#include <iostream>
+
+template <typename T>
+inline std::string LEToHex(const T &pt)
+{
+    std::stringstream ss;
+    for (int l = sizeof(T) - 1; l >= 0; l--)
+    {
+        ss << strprintf("%02x", *((unsigned char *)&pt + l));
+    }
+    return ss.str();
+}
+
+inline std::string HexBytes(const unsigned char *buf, int size)
+{
+    std::stringstream ss;
+    for (int l = 0; l < size; l++)
+    {
+        ss << strprintf("%02x", *(buf + l));
+    }
+    return ss.str();
+}
 
 // special high speed hasher for VerusHash 2.0
 struct verusclhasher {
@@ -150,6 +173,9 @@ struct verusclhasher {
     // align on 256 bit boundary at end
     verusclhasher(uint64_t keysize=VERUSKEYSIZE) : keySizeInBytes((keysize >> 5) << 5)
     {
+#ifdef __APPLE__
+        __tls_init();
+#endif
         if (IsCPUVerusOptimized())
         {
             verusclhashfunction = &verusclhash;

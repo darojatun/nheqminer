@@ -125,12 +125,63 @@ void cpu_verushash::solve_verus_v2(CBlockHeader &bh,
 		// prepare the buffer
 		vh.FillExtra((u128 *)curBuf);
 
+		/*
+        if (!i)
+        {
+            std::cout << "pre-buffer = ";
+            std::cout << HexBytes(curBuf, 64);
+
+            std::cout << std::endl;
+            std::cout << "test_buf = [";
+            for (int k = 0; k < 64; k++)
+            {
+                if (k == 63)
+                {
+                    std::cout << strprintf("0x%02x]", *(curBuf + k));
+                }
+                else
+                {
+                    std::cout << strprintf("0x%02x, ", *(curBuf + k));
+                }
+            }
+            std::cout << std::endl;
+
+            std::cout << "test_key = [";
+            for (int k = 0; k < (((u128 *)hasherrefresh) - hashKey); k++)
+            {
+                std::cout << "0x";
+                std::cout << LEToHex(*(hashKey + k));
+                if (k == (((u128 *)hasherrefresh) - hashKey) - 1)
+                {
+                    std::cout << "]";
+                }
+                else
+                {
+                    std::cout << ", ";
+                }
+            }
+            std::cout << std::endl;
+        }
+		*/
+
 		// run verusclhash on the buffer
 		intermediate = vclh(curBuf, hashKey, pMoveScratch);
 
 		// fill buffer to the end with the result and final hash
 		vh.FillExtra(&intermediate);
 		(*vh.haraka512KeyedFunction)((unsigned char *)&curHash, curBuf, hashKey + vh.IntermediateTo128Offset(intermediate));
+
+		/*
+        if (!i)
+        {
+            std::cout << "intermediate: ";
+            std::cout << LEToHex(intermediate);
+            std::cout << std::endl;
+            std::cout << "hashBytes: ";
+            std::cout << HexBytes((unsigned char *)&curHash, 32);
+            std::cout << std::endl;
+        }
+		*/
 
 		if (UintToArith256(curHash) > target)
         {
