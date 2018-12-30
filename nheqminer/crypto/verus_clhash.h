@@ -20,14 +20,11 @@
 #ifndef INCLUDE_VERUS_CLHASH_H
 #define INCLUDE_VERUS_CLHASH_H
 
-
 #ifndef _WIN32
 #include <cpuid.h>
 #include <x86intrin.h>
 #else
 #include <intrin.h>
-#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
-typedef unsigned char u_char;
 #endif // !WIN32
 
 #include <stdlib.h>
@@ -35,12 +32,18 @@ typedef unsigned char u_char;
 #include <stddef.h>
 #include <assert.h>
 #include <boost/thread.hpp>
+#include "tinyformat.h"
 #ifdef __APPLE__
 void __tls_init();
 #endif
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef _WIN32
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+typedef unsigned char u_char;
 #endif
 
 enum {
@@ -132,6 +135,28 @@ void *alloc_aligned_buffer(uint64_t bufSize);
 
 #include <vector>
 #include <string>
+#include <iostream>
+
+template <typename T>
+inline std::string LEToHex(const T &pt)
+{
+    std::stringstream ss;
+    for (int l = sizeof(T) - 1; l >= 0; l--)
+    {
+        ss << strprintf("%02x", *((unsigned char *)&pt + l));
+    }
+    return ss.str();
+}
+
+inline std::string HexBytes(const unsigned char *buf, int size)
+{
+    std::stringstream ss;
+    for (int l = 0; l < size; l++)
+    {
+        ss << strprintf("%02x", *(buf + l));
+    }
+    return ss.str();
+}
 
 // special high speed hasher for VerusHash 2.0
 struct verusclhasher {
@@ -150,12 +175,11 @@ struct verusclhasher {
     }
 
     // align on 256 bit boundary at end
-
     verusclhasher(uint64_t keysize=VERUSKEYSIZE) : keySizeInBytes((keysize >> 5) << 5)
     {
-        #ifdef __APPLE__
-            __tls_init();
-        #endif
+#ifdef __APPLE__
+        __tls_init();
+#endif
         if (IsCPUVerusOptimized())
         {
             verusclhashfunction = &verusclhash;

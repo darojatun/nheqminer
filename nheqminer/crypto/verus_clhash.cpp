@@ -181,6 +181,14 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
 	vhw.Reset();
 	vhw << bh;
 
+    /*
+	std::stringstream ss;
+	std::cout << "test_header = ";
+	bh.Serialize(ss, SER_GETHASH, PROTOCOL_VERSION);
+    std::cout << HexBytes((const unsigned char *)ss.str().data(), ss.str().length());
+	std::cout << std::endl;
+    */
+
 	int64_t *extraPtr = vhw.xI64p();
 	unsigned char *curBuf = vh.CurBuffer();
 
@@ -224,6 +232,45 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
         _mm_store_si128((u128 *)(&curBuf[32 + 16]), fill1);
         curBuf[32 + 15] = ch;
 
+        /*
+        if (!i)
+        {
+            std::cout << "pre-buffer = ";
+            std::cout << HexBytes(curBuf, 64);
+
+            std::cout << std::endl;
+            std::cout << "test_buf = [";
+            for (int k = 0; k < 64; k++)
+            {
+                if (k == 63)
+                {
+                    std::cout << strprintf("0x%02x]", *(curBuf + k));
+                }
+                else
+                {
+                    std::cout << strprintf("0x%02x, ", *(curBuf + k));
+                }
+            }
+            std::cout << std::endl;
+
+            std::cout << "test_key = [";
+            for (int k = 0; k < (((u128 *)hasherrefresh) - hashKey); k++)
+            {
+                std::cout << "0x";
+                std::cout << LEToHex(*(hashKey + k));
+                if (k == (((u128 *)hasherrefresh) - hashKey) - 1)
+                {
+                    std::cout << "]";
+                }
+                else
+                {
+                    std::cout << ", ";
+                }
+            }
+            std::cout << std::endl;
+        }
+        */
+
 		// run verusclhash on the buffer
         //const uint64_t intermediate = vclh(curBuf, hashKey, pMoveScratch);
         __m128i  acc = __verusclmulwithoutreduction64alignedrepeat(hashKey, (const __m128i *)curBuf, vclh.keyMask, pMoveScratch);
@@ -236,6 +283,18 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
         curBuf[32 + 15] = *((unsigned char *)&intermediate);
 
 		haraka512_keyed_local((unsigned char *)&curHash, curBuf, hashKey + vh.IntermediateTo128Offset(intermediate));
+
+        /*
+        if (!i)
+        {
+            std::cout << "intermediate: ";
+            std::cout << LEToHex(intermediate);
+            std::cout << std::endl;
+            std::cout << "hashBytes: ";
+            std::cout << HexBytes((unsigned char *)&curHash, 32);
+            std::cout << std::endl;
+        }
+        */
 
         if (compResult[3] > compTarget[3] || (compResult[3] == compTarget[3] && compResult[2] > compTarget[2]) ||
             (compResult[3] == compTarget[3] && compResult[2] == compTarget[2] && compResult[1] > compTarget[1]) ||
