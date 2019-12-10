@@ -42,6 +42,7 @@ struct cpu_verushash
 
 	CVerusHashWriter *pVHW;
 	CVerusHashV2bWriter *pVHW2b;
+	CVerusHashV2bWriter *pVHW2b2_1;
 	int use_opt; // unused
 };
 
