@@ -84,7 +84,7 @@ class CVerusHashV2
 
         verusclhasher vclh;
 
-        CVerusHashV2(int solutionVerusion=SOLUTION_VERUSHHASH_V2) : vclh(VERUSKEYSIZE, solutionVerusion) {
+        CVerusHashV2(int solutionVerusion=SOLUTION_VERUSHHASH_V2_1) : vclh(VERUSKEYSIZE, solutionVerusion) {
             // we must have allocated key space, or can't run
             if (!verusclhasher_key.get())
             {

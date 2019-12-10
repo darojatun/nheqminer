@@ -245,7 +245,7 @@ public:
     int nType;
     int nVersion;
 
-    CVerusHashV2bWriter(int nTypeIn, int nVersionIn, int solutionVersion=SOLUTION_VERUSHHASH_V2, uint64_t keysize=VERUSKEYSIZE) : 
+    CVerusHashV2bWriter(int nTypeIn, int nVersionIn, int solutionVersion=SOLUTION_VERUSHHASH_V2_1, uint64_t keysize=VERUSKEYSIZE) : 
         nType(nTypeIn), nVersion(nVersionIn), state(solutionVersion) {}
 
     inline void Reset() { state.Reset(); }

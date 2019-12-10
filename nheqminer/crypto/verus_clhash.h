@@ -192,7 +192,7 @@ struct verusclhasher {
     }
 
     // align on 256 bit boundary at end
-    verusclhasher(uint64_t keysize=VERUSKEYSIZE, int solutionVersion=SOLUTION_VERUSHHASH_V2) : keySizeInBytes((keysize >> 5) << 5)
+    verusclhasher(uint64_t keysize=VERUSKEYSIZE, int solutionVersion=SOLUTION_VERUSHHASH_V2_1) : keySizeInBytes((keysize >> 5) << 5)
     {
 #ifdef __APPLE__
        __tls_init();
