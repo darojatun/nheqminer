@@ -349,7 +349,7 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
     const int keyrefreshsize = vclh.keyrefreshsize(); // number of 256 bit blocks
 
 	bh.nSolution = std::vector<unsigned char>(1344);
-	bh.nSolution[0] = 3; // latest VerusHash 2.0 solution version
+	bh.nSolution[0] = 3; // latest VerusHash 2.1 solution version
 
 	// prepare the hash state
 	vhw.Reset();
@@ -445,7 +445,8 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
 
 		// run verusclhash on the buffer
         //const uint64_t intermediate = vclh(curBuf, hashKey, pMoveScratch);
-        __m128i  acc = __verusclmulwithoutreduction64alignedrepeat(hashKey, (const __m128i *)curBuf, vclh.keyMask, pMoveScratch);
+        __m128i  acc = (*vclh.verusinternalclhashfunction)(hashKey, (const __m128i *)curBuf, vclh.keyMask, pMoveScratch);
+
         acc = _mm_xor_si128(acc, lazyLengthHash(1024, 64));
 		const uint64_t intermediate = precompReduction64(acc);
 
