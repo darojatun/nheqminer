@@ -40,7 +40,7 @@ uint256 CBlockHeader::GetVerusV2Hash() const
     {
         if (nVersion > 4)
         {
-            return SerializeVerusHashV2b(*this);
+            return SerializeVerusHashV2b(*this, SER_GETHASH, PROTOCOL_VERSION, nSolution.size() ? nSolution[0] : SOLUTION_VERUSHHASH_V2);
         }
         else
         {
