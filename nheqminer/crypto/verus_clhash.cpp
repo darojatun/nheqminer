@@ -332,7 +332,19 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
 	std::function<void(void)> hashdonef,
 	cpu_verushash &device_context)
 {
-	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b2_1);
+    if (bh.nSolution.size() && bh.nSolution[0] != device_context.solutionVer)
+    {
+        device_context.stop(device_context);
+        device_context.solutionVer = bh.nSolution[0];
+        device_context.start(device_context);
+    }
+    if (device_context.solutionVer < 4)
+    {
+        bh.nSolution = std::vector<unsigned char>(1344);
+        bh.nSolution[0] = device_context.solutionVer;
+    }
+
+	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b);
 	CVerusHashV2 &vh = vhw.GetState();
     verusclhasher &vclh = vh.vclh;
 
@@ -347,9 +359,6 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
     void *hasherrefresh = ((unsigned char *)hashKey) + keysize;
 	__m128i **pMoveScratch = vclh.getpmovescratch(hasherrefresh);
     const int keyrefreshsize = vclh.keyrefreshsize(); // number of 256 bit blocks
-
-	bh.nSolution = std::vector<unsigned char>(1344);
-	bh.nSolution[0] = 3; // latest VerusHash 2.1 solution version
 
 	// prepare the hash state
 	vhw.Reset();

@@ -21,15 +21,13 @@
 void cpu_verushash::start(cpu_verushash& device_context) 
 {
 	device_context.pVHW = new CVerusHashWriter(SER_GETHASH, PROTOCOL_VERSION);
- 	device_context.pVHW2b = new CVerusHashV2bWriter(SER_GETHASH, PROTOCOL_VERSION, 1);
- 	device_context.pVHW2b2_1 = new CVerusHashV2bWriter(SER_GETHASH, PROTOCOL_VERSION, 3);
+ 	device_context.pVHW2b = new CVerusHashV2bWriter(SER_GETHASH, PROTOCOL_VERSION, device_context.solutionVer);
 }
 
 void cpu_verushash::stop(cpu_verushash& device_context) 
 { 
 	delete device_context.pVHW;
 	delete device_context.pVHW2b;
-	delete device_context.pVHW2b2_1;
 }
 
 void cpu_verushash::solve_verus(CBlockHeader &bh, 
@@ -41,6 +39,7 @@ void cpu_verushash::solve_verus(CBlockHeader &bh,
 {
 	if (bh.nVersion > 4)
 	{
+
 		// short circuit to version 2
 		if (IsCPUVerusOptimized())
 		{
@@ -95,11 +94,26 @@ void cpu_verushash::solve_verus_v2(CBlockHeader &bh,
 	std::function<void(void)> hashdonef,
 	cpu_verushash &device_context)
 {
-	std::vector<unsigned char> solution = std::vector<unsigned char>(1344);
-    solution[0] = 3; // latest VerusHash 2.1 solution version
-	bh.nSolution = solution;
+    if (bh.nSolution.size() && bh.nSolution[0] != device_context.solutionVer)
+    {
+        device_context.stop(device_context);
+        device_context.solutionVer = bh.nSolution[0];
+        device_context.start(device_context);
+    }
 
-	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b2_1);
+	std::vector<unsigned char> solution = std::vector<unsigned char>();
+    if (device_context.solutionVer < 4)
+    {
+        solution = std::vector<unsigned char>(1344);
+        solution[0] = device_context.solutionVer;
+		bh.nSolution = solution;
+    }
+	else
+	{
+		solution = bh.nSolution = solution;
+	}
+
+	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b);
 	CVerusHashV2 &vh = vhw.GetState();
     verusclhasher &vclh = vh.vclh;
 	uint256 curHash;

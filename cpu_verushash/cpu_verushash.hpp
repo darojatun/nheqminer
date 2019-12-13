@@ -40,9 +40,11 @@ struct cpu_verushash
 		return "VerusHash 2.0 - CPU";
 	}
 
+	cpu_verushash(int solutionVer = SOLUTION_VERUSHHASH_V2) : solutionVer(solutionVer) {}
+
 	CVerusHashWriter *pVHW;
 	CVerusHashV2bWriter *pVHW2b;
-	CVerusHashV2bWriter *pVHW2b2_1;
+	int solutionVer;
 	int use_opt; // unused
 };
 
