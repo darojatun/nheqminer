@@ -567,7 +567,7 @@ ZcashJob* ZcashMiner::parseJob(const Array& params)
         CDataStream ss(headerData, SER_NETWORK, PROTOCOL_VERSION);
         try {
             ss >> ret->header;
-			if (params.size() > 8)
+			if (params.size() > 8 && params[8].type() == json_spirit::str_type)	// workaround bug in node-stratum-pool that used to add an 8th bool param
 			{
 				// if we have a ninth parameter, convert the hex string into a solution to use
 				ret->header.nSolution = ParseHex(params[8].get_str());
