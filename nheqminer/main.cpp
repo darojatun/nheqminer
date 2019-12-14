@@ -38,7 +38,7 @@ namespace attrs = boost::log::attributes;
 namespace keywords = boost::log::keywords;
 
 #undef __cpuid
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #define __cpuid(out, infoType)\
 	asm("cpuid": "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): "a" (infoType));
 #define __cpuidex(out, infoType, ecx)\
@@ -73,7 +73,11 @@ extern "C" void stratum_sigint_handler(int signum)
 		scSig->disconnect();
 	
 		for (int i = 0; scSig->isRunning() && i < 5; i++)
-			sleep(1);
+		#ifndef _WIN32
+					sleep(1);
+		#else
+					_sleep(1000);
+		#endif // !_WIN32
 	}
 	if (_MinerFactory) _MinerFactory->ClearAllSolvers();
 	exit(0);
@@ -266,22 +270,43 @@ void start_mining(int api_port, const std::string& host, const std::string& port
 	if (api) delete api;
 }
 
+#ifdef _WIN32
+#ifdef _MSC_VER
+__inline int msver(void) {
+	switch (_MSC_VER) {
+	case 1500: return 2008;
+	case 1600: return 2010;
+	case 1700: return 2012;
+	case 1800: return 2013;
+	case 1900: return 2015;
+	default: return (_MSC_VER / 100);
+	}
+}
+#endif
+#endif // !_WIN32
 
 int main(int argc, char* argv[])
 {
-#if defined(WIN32) && defined(NDEBUG)
+#if defined(_WIN32) && defined(NDEBUG)
 	system(""); // windows 10 colored console
 #endif
 
 	std::cout << std::endl;
 	std::cout << "\t==================== www.veruscoin.io ====================" << std::endl;
-	std::cout << "\tEquihash and VerusHash CPU&GPU Miner, v" STANDALONE_MINER_VERSION << std::endl;
+	std::cout << "\tEquihash and VerusHash (CPU) 1.0 and 2.0 Miner, v" STANDALONE_MINER_VERSION << std::endl;
 	std::cout << "\twith support for mining VRSC and other VerusHash coins." << std::endl << std::endl;
 	std::cout << "\tThanks to original Nicehash developers and Zcash developers" << std::endl;
 	std::cout << "\tfor providing base of the code." << std::endl << std::endl;
 	std::cout << "\tSpecial thanks to tromp, xenoncat and djeZo for providing "<< std::endl;
 	std::cout << "\toptimized CPU and CUDA equihash solvers." << std::endl << std::endl;
 	std::cout << "\tProtocol upgrade and VerusHash CPU support by miketout." << std::endl;
+	#ifdef _WIN32
+	#ifdef _MSC_VER
+	std::cout << "\tVC++ " << msver() << " build by Decker." << std::endl;	
+	#else
+	std::cout << "\tWindows build by Decker." << std::endl;	
+	#endif
+	#endif // !_WIN32
 	std::cout << "\t==================== www.veruscoin.io ====================" << std::endl;
 	std::cout << std::endl;
 
@@ -371,39 +396,6 @@ int main(int argc, char* argv[])
 		case 'v':
 		{
 			verus_hash = true;
-			std::cout << "Setting hash algorithm to VerusHash - ";
-			CVerusHash::init();
-			if (IsCPUVerusOptimized())
-			{
-				std::cout << "AES OPTIMIZED";
-			}
-			else
-			{
-				std::cout << "NO AES DETECTED";
-			}
-			std::cout << std::endl;
-			CBlockHeader::SetVerusHash();
-
-			// set to Verus Hash for Verus Coin
-			switch (argv[i][2])
-			{
-				case 'm':
-				{
-					// change the magic number for hashing
-					try
-					{
-						ASSETCHAINS_MAGIC = std::atoi(argv[++i]);
-						std::cout << "\t* Magic number for chain set to " << ASSETCHAINS_MAGIC << std::endl;
-					}
-					catch (...)
-					{
-						std::cout << "\t* -vm must be followed by the 32 bit magic number of the chain to mine, default is Verus Coin" << std::endl;
-						std::cout << "\t* miner terminating..." << std::endl;
-						return 1;
-					}
-					break;
-				}
-			}
 			break;
 		}
 
@@ -494,8 +486,14 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (force_cpu_ext >= 0)
+	if (verus_hash)
 	{
+		CBlockHeader::SetVerusHash();
+	}
+
+	if (force_cpu_ext > 0)
+	{
+		ForceCPUVerusOptimized(true);
 		switch (force_cpu_ext)
 		{
 		case 1:
@@ -508,8 +506,30 @@ int main(int argc, char* argv[])
 			break;
 		}
 	}
+	else if (force_cpu_ext == 0)
+	{
+		ForceCPUVerusOptimized(false);
+	}
 	else
+	{
 		detect_AVX_and_AVX2();
+	}
+
+	if (verus_hash)
+	{
+		std::cout << "Setting hash algorithm to VerusHash - ";
+		CVerusHash::init();
+		CVerusHashV2::init();
+		if (IsCPUVerusOptimized())
+		{
+			std::cout << "CPU HARDWARE OPTIMIZED";
+		}
+		else
+		{
+			std::cout << "NO CPU SUPPORT DETECTED";
+		}
+		std::cout << std::endl;
+	}
 
 	// init_logging init START
     std::cout << "Setting log level to " << log_level << std::endl;
@@ -530,7 +550,7 @@ int main(int argc, char* argv[])
 
 	if (verus_hash)
 	{
-		BOOST_LOG_TRIVIAL(info) << "Using AES: " << (use_aes ? "YES" : "NO");
+		BOOST_LOG_TRIVIAL(info) << "Using AES, AVX, and PCLMUL: " << (IsCPUVerusOptimized() ? "YES" : "NO");
 	}
 	else
 	{

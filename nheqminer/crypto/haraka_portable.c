@@ -147,32 +147,32 @@ void tweak_constants(const unsigned char *pk_seed, const unsigned char *sk_seed,
     memcpy(rc, buf, 40*16);    
 }
 
-static void haraka_S_absorb(unsigned char *s, unsigned int r,
+static void haraka_S_absorb(unsigned char *s, 
                             const unsigned char *m, unsigned long long mlen,
                             unsigned char p)
 {
     unsigned long long i;
-    unsigned char t[r];
+    unsigned char t[32];
 
-    while (mlen >= r) {
+    while (mlen >= 32) {
         // XOR block to state
-        for (i = 0; i < r; ++i) {
+        for (i = 0; i < 32; ++i) {
             s[i] ^= m[i];
         }
         haraka512_perm(s, s);
-        mlen -= r;
-        m += r;
+        mlen -= 32;
+        m += 32;
     }
 
-    for (i = 0; i < r; ++i) {
+    for (i = 0; i < 32; ++i) {
         t[i] = 0;
     }
     for (i = 0; i < mlen; ++i) {
         t[i] = m[i];
     }
     t[i] = p;
-    t[r - 1] |= 128;
-    for (i = 0; i < r; ++i) {
+    t[32 - 1] |= 128;
+    for (i = 0; i < 32; ++i) {
         s[i] ^= t[i];
     }
 }
@@ -199,7 +199,7 @@ void haraka_S(unsigned char *out, unsigned long long outlen,
     for (i = 0; i < 64; i++) {
         s[i] = 0;
     }
-    haraka_S_absorb(s, 32, in, inlen, 0x1F);
+    haraka_S_absorb(s, in, inlen, 0x1F);
 
     haraka_S_squeezeblocks(out, outlen / 32, s, 32);
     out += (outlen / 32) * 32;
@@ -246,6 +246,40 @@ void haraka512_perm(unsigned char *out, const unsigned char *in)
     memcpy(out, s, 64);
 }
 
+void haraka512_perm_keyed(unsigned char *out, const unsigned char *in, const u128 *rc) 
+{
+    int i, j;
+
+    unsigned char s[64], tmp[16];
+
+    memcpy(s, in, 16);
+    memcpy(s + 16, in + 16, 16);
+    memcpy(s + 32, in + 32, 16);
+    memcpy(s + 48, in + 48, 16);
+
+    for (i = 0; i < 5; ++i) {
+        // aes round(s)
+        for (j = 0; j < 2; ++j) {
+            aesenc(s, (const unsigned char *)&rc[4*2*i + 4*j]);
+            aesenc(s + 16, (const unsigned char *)&rc[4*2*i + 4*j + 1]);
+            aesenc(s + 32, (const unsigned char *)&rc[4*2*i + 4*j + 2]);
+            aesenc(s + 48, (const unsigned char *)&rc[4*2*i + 4*j + 3]);
+        }
+
+        // mixing
+        unpacklo32(tmp, s, s + 16);
+        unpackhi32(s, s, s + 16);
+        unpacklo32(s + 16, s + 32, s + 48);
+        unpackhi32(s + 32, s + 32, s + 48);
+        unpacklo32(s + 48, s, s + 32);
+        unpackhi32(s, s, s + 32);
+        unpackhi32(s + 32, s + 16, tmp);
+        unpacklo32(s + 16, s + 16, tmp);
+    }
+
+    memcpy(out, s, 64);
+}
+
 void haraka512_port(unsigned char *out, const unsigned char *in)
 {
     int i;
@@ -253,6 +287,25 @@ void haraka512_port(unsigned char *out, const unsigned char *in)
     unsigned char buf[64];
 
     haraka512_perm(buf, in);
+    /* Feed-forward */
+    for (i = 0; i < 64; i++) {
+        buf[i] = buf[i] ^ in[i];
+    }
+
+    /* Truncated */
+    memcpy(out,      buf + 8, 8);
+    memcpy(out + 8,  buf + 24, 8);
+    memcpy(out + 16, buf + 32, 8);
+    memcpy(out + 24, buf + 48, 8);
+}
+
+void haraka512_port_keyed(unsigned char *out, const unsigned char *in, const u128 *rc)
+{
+    int i;
+
+    unsigned char buf[64];
+
+    haraka512_perm_keyed(buf, in, rc);
     /* Feed-forward */
     for (i = 0; i < 64; i++) {
         buf[i] = buf[i] ^ in[i];

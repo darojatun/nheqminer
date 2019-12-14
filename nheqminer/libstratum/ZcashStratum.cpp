@@ -17,7 +17,7 @@
 #include <boost/circular_buffer.hpp>
 #include "speed.hpp"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <Windows.h>
 #endif
 
@@ -95,6 +95,14 @@ std::vector<unsigned char> GetMinimalFromIndices(std::vector<eh_index> indices,
 	return ret;
 }
 
+std::string ToHex(unsigned char ch)
+{
+	char digits[17] = "0123456789abcdef";
+	std::string s = "00";
+	s[0] = digits[ch >> 4];
+	s[1] = digits[ch & 0xf];
+	return s;
+}
 
 void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solver)
 {
@@ -193,7 +201,16 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 
             // Start working
             while (true) {
-				BOOST_LOG_CUSTOM(debug, pos) << "Running Equihash solver with nNonce = " << nonce.ToString();
+				if (solver->GetType() == SolverType::VERUS_CPU_OPT)
+				{
+					// check that current solution version of this job is different than current. if so, stop and start
+					// the solver with the new solution version
+					BOOST_LOG_CUSTOM(debug, pos) << "Running VerusHash solver with nNonce = " << nonce.ToString();
+				}
+				else
+				{
+					BOOST_LOG_CUSTOM(debug, pos) << "Running Equihash solver with nNonce = " << nonce.ToString();
+				}
 
 				auto bNonce = ArithToUint256(nonce);
 
@@ -202,6 +219,7 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 				(const std::vector<uint32_t>& index_vector, size_t cbitlen, const unsigned char* compressed_sol) 
 				{
 					actualHeader.nNonce = bNonce;
+
 					if (compressed_sol)
 					{
 						actualHeader.nSolution = std::vector<unsigned char>(1344);
@@ -209,13 +227,17 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 							actualHeader.nSolution[i] = compressed_sol[i];
 					}
 					else
+					{
 						actualHeader.nSolution = GetMinimalFromIndices(index_vector, cbitlen);
+					}
 
 					speed.AddSolution();
 
 					BOOST_LOG_CUSTOM(debug, pos) << "Checking solution against target...";
 
 					uint256 headerhash = actualHeader.GetHash();
+					BOOST_LOG_CUSTOM(debug, pos) << std::endl << "  hash after." << headerhash.GetHex();
+
 					if (UintToArith256(headerhash) > actualTarget) {
 						BOOST_LOG_CUSTOM(debug, pos) << "Too large: " << headerhash.ToString();
 						return;
@@ -237,7 +259,8 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 
 				if (solver->GetType() == SolverType::VERUS_CPU_OPT)
 				{
-					actualHeader.nSolution = std::vector<unsigned char>(1344);
+					actualHeader.nNonce = bNonce;
+
 					// solver needs more information to prevent callouts and perform well on VerusHash
 					solver->solve_verus(actualHeader,
 						actualTarget,
@@ -247,7 +270,6 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 				}
 				else
 				{
-					// solver needs more information to prevent callouts and perform well on VerusHash
 					solver->solve(tequihash_header,
 						tequihash_header_len,
 						(const char*)bNonce.begin(),
@@ -525,7 +547,7 @@ ZcashJob* ZcashMiner::parseJob(const Array& params)
 
     ret->header.nVersion = be32toh(version);
 
-    if (ret->header.nVersion == 4 || ret->header.nVersion == 0x20000000) {
+    if (ret->header.nVersion == 4 || ret->header.nVersion == 0x20000000 || ret->header.nVersion == 65540) {
         if (params.size() < 8) {
             throw std::logic_error("Invalid job params");
         }
@@ -545,6 +567,11 @@ ZcashJob* ZcashMiner::parseJob(const Array& params)
         CDataStream ss(headerData, SER_NETWORK, PROTOCOL_VERSION);
         try {
             ss >> ret->header;
+			if (params.size() > 8 && params[8].type() == json_spirit::str_type)	// workaround bug in node-stratum-pool that used to add an 8th bool param
+			{
+				// if we have a ninth parameter, convert the hex string into a solution to use
+				ret->header.nSolution = ParseHex(params[8].get_str());
+			}
         } catch (const std::ios_base::failure&) {
             throw std::logic_error("ZcashMiner::parseJob(): Invalid block header parameters");
         }
@@ -676,6 +703,7 @@ int benchmark_thread(int tid, ISolver *solver)
 	try
 	{
 		CBlock pblock;
+		pblock.nVersion = 0x10004;
 		CEquihashInput I{ pblock };
 		CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
 		ss << I;
@@ -722,7 +750,7 @@ void Solvers_doBenchmark(int hashes, const std::vector<ISolver *> &solvers, bool
 			BOOST_LOG_TRIVIAL(info) << "Benchmarking CPU worker (" << solver->getname() << ") " << solver->getdevinfo();
 		}
 		else if (solver->GetType() == SolverType::VERUS_CPU_OPT) {
-			BOOST_LOG_TRIVIAL(info) << "Benchmarking VerusHash optimized CPU worker (" << solver->getname() << ") " << solver->getdevinfo();
+			BOOST_LOG_TRIVIAL(info) << "Benchmarking VerusHash CPU worker (" << solver->getname() << ") " << solver->getdevinfo();
 		}
 		else if (solver->GetType() == SolverType::CUDA) {
 			BOOST_LOG_TRIVIAL(info) << "Benchmarking CUDA worker (" << solver->getname() << ") " << solver->getdevinfo();

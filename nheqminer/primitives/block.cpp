@@ -12,11 +12,6 @@
 
 int32_t ASSETCHAINS_MAGIC = -497513811;
 
-uint256 CBlockHeader::GetHash() const
-{
-    return SerializeHash(*this);
-}
-
 // default hash algorithm for block
 uint256 (CBlockHeader::*CBlockHeader::hashFunction)() const = &CBlockHeader::GetSHA256DHash;
 
@@ -36,8 +31,22 @@ uint256 CBlockHeader::GetVerusHash() const
 
 uint256 CBlockHeader::GetVerusV2Hash() const
 {
-    // no check for genesis block and use the optimized hash
-    return SerializeVerusHashV2(*this);
+    if (hashPrevBlock.IsNull())
+    {
+        // always use SHA256D for genesis block
+        return SerializeHash(*this);
+    }
+    else
+    {
+        if (nVersion > 4)
+        {
+            return SerializeVerusHashV2b(*this, SER_GETHASH, PROTOCOL_VERSION, nSolution.size() ? nSolution[0] : SOLUTION_VERUSHHASH_V2);
+        }
+        else
+        {
+            return SerializeVerusHash(*this);
+        }
+    }
 }
 
 void CBlockHeader::SetSHA256DHash()
@@ -47,7 +56,7 @@ void CBlockHeader::SetSHA256DHash()
 
 void CBlockHeader::SetVerusHash()
 {
-    CBlockHeader::hashFunction = &CBlockHeader::GetVerusHash;
+    CBlockHeader::hashFunction = &CBlockHeader::GetVerusV2Hash;
 }
 
 // returns false if unable to fast calculate the VerusPOSHash from the header. it can still be calculated from the block
