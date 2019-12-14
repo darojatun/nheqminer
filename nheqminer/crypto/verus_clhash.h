@@ -30,7 +30,7 @@
 #ifdef _WIN32
 #undef __cpuid
 #include <intrin.h>
-#endif
+#else
 
 #if defined(__arm__)  || defined(__aarch64__)
 #include "crypto/SSE2NEON.h"
@@ -40,6 +40,7 @@
 #include <cpuid.h>
 #include <x86intrin.h>
 #endif // !WIN32
+#endif
 
 #include <boost/thread.hpp>
 #include "tinyformat.h"
@@ -118,6 +119,18 @@ inline bool IsCPUVerusOptimized()
     #else
     if (__cpuverusoptimized & 0x80)
     {
+        #ifdef _MSC_VER
+        #define bit_AVX		(1 << 28)
+        #define bit_AES		(1 << 25)
+        #define bit_PCLMUL  (1 << 1)
+        // https://insufficientlycomplicated.wordpress.com/2011/11/07/detecting-intel-advanced-vector-extensions-avx-in-visual-studio/
+        // bool cpuAVXSuport = cpuInfo[2] & (1 << 28) || false;
+
+        int cpuInfo[4];
+		__cpuid(cpuInfo, 1);
+        __cpuverusoptimized = ((cpuInfo[2] & (bit_AVX | bit_AES | bit_PCLMUL)) == (bit_AVX | bit_AES | bit_PCLMUL));
+
+        #else
         unsigned int eax,ebx,ecx,edx;
         if (!__get_cpuid(1,&eax,&ebx,&ecx,&edx))
         {
@@ -127,6 +140,7 @@ inline bool IsCPUVerusOptimized()
         {
             __cpuverusoptimized = ((ecx & (bit_AVX | bit_AES | bit_PCLMUL)) == (bit_AVX | bit_AES | bit_PCLMUL));
         }
+        #endif
     }
     #endif
     return __cpuverusoptimized;
