@@ -245,8 +245,8 @@ public:
     int nType;
     int nVersion;
 
-    CVerusHashV2bWriter(int nTypeIn, int nVersionIn, uint64_t keysize=VERUSKEYSIZE) : 
-        nType(nTypeIn), nVersion(nVersionIn), state() {}
+    CVerusHashV2bWriter(int nTypeIn, int nVersionIn, int solutionVersion=SOLUTION_VERUSHHASH_V2_1, uint64_t keysize=VERUSKEYSIZE) : 
+        nType(nTypeIn), nVersion(nVersionIn), state(solutionVersion) {}
 
     inline void Reset() { state.Reset(); }
 
@@ -295,9 +295,9 @@ uint256 SerializeVerusHashV2(const T& obj, int nType=SER_GETHASH, int nVersion=P
  *  a carryless multiply-based hash as fill for the unused space.
  */
 template<typename T>
-uint256 SerializeVerusHashV2b(const T& obj, verusclhasher *vlch=NULL, int nType=SER_GETHASH, int nVersion=PROTOCOL_VERSION)
+uint256 SerializeVerusHashV2b(const T& obj, int nType=SER_GETHASH, int nVersion=PROTOCOL_VERSION, int solVersion=SOLUTION_VERUSHHASH_V2_1)
 {
-    CVerusHashV2bWriter ss(nType, nVersion);
+    CVerusHashV2bWriter ss(nType, nVersion, solVersion);
     ss << obj;
     return ss.GetHash();
 }

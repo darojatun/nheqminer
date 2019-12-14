@@ -203,6 +203,8 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
             while (true) {
 				if (solver->GetType() == SolverType::VERUS_CPU_OPT)
 				{
+					// check that current solution version of this job is different than current. if so, stop and start
+					// the solver with the new solution version
 					BOOST_LOG_CUSTOM(debug, pos) << "Running VerusHash solver with nNonce = " << nonce.ToString();
 				}
 				else
@@ -258,8 +260,8 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 				if (solver->GetType() == SolverType::VERUS_CPU_OPT)
 				{
 					actualHeader.nNonce = bNonce;
-					// solver needs more information to prevent callouts and perform well on VerusHash
 
+					// solver needs more information to prevent callouts and perform well on VerusHash
 					solver->solve_verus(actualHeader,
 						actualTarget,
 						cancelFun,
@@ -268,7 +270,6 @@ void static ZcashMinerThread(ZcashMiner* miner, int size, int pos, ISolver *solv
 				}
 				else
 				{
-					// solver needs more information to prevent callouts and perform well on VerusHash
 					solver->solve(tequihash_header,
 						tequihash_header_len,
 						(const char*)bNonce.begin(),
@@ -566,6 +567,11 @@ ZcashJob* ZcashMiner::parseJob(const Array& params)
         CDataStream ss(headerData, SER_NETWORK, PROTOCOL_VERSION);
         try {
             ss >> ret->header;
+			if (params.size() > 8 && params[8].type() == json_spirit::str_type)	// workaround bug in node-stratum-pool that used to add an 8th bool param
+			{
+				// if we have a ninth parameter, convert the hex string into a solution to use
+				ret->header.nSolution = ParseHex(params[8].get_str());
+			}
         } catch (const std::ios_base::failure&) {
             throw std::logic_error("ZcashMiner::parseJob(): Invalid block header parameters");
         }
