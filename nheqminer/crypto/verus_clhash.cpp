@@ -321,7 +321,7 @@ bool mine_verus_v2(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHas
         _mm_store_si128((u128 *)(&curBuf[32 + 16]), fill2);
         curBuf[32 + 15] = *((unsigned char *)&intermediate);
 
-		haraka512_keyed_local((unsigned char *)&curHash, curBuf, hashKey + vh.IntermediateTo128Offset(intermediate));
+		haraka512_keyed((unsigned char *)&curHash, curBuf, hashKey + vh.IntermediateTo128Offset(intermediate));
 
         if (compResult[3] > compTarget[3] || (compResult[3] == compTarget[3] && compResult[2] > compTarget[2]) ||
             (compResult[3] == compTarget[3] && compResult[2] == compTarget[2] && compResult[1] > compTarget[1]) ||
@@ -485,7 +485,7 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
         _mm_store_si128((u128 *)(&curBuf[32 + 16]), fill2);
         curBuf[32 + 15] = *((unsigned char *)&intermediate);
 
-		haraka512_keyed_local((unsigned char *)&curHash, curBuf, hashKey + vh.IntermediateTo128Offset(intermediate));
+		haraka512_keyed((unsigned char *)&curHash, curBuf, hashKey + vh.IntermediateTo128Offset(intermediate));
 
         /*
         if (!i)
@@ -499,9 +499,7 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
         }
         */
 
-        if (compResult[3] > compTarget[3] || (compResult[3] == compTarget[3] && compResult[2] > compTarget[2]) ||
-            (compResult[3] == compTarget[3] && compResult[2] == compTarget[2] && compResult[1] > compTarget[1]) ||
-            (compResult[3] == compTarget[3] && compResult[2] == compTarget[2] && compResult[1] == compTarget[1] && compResult[0] > compTarget[0]))
+        if (compResult[3] > compTarget[3] )
         {
             // refresh the key
             fixupkey(pMoveScratch, pdesc);
