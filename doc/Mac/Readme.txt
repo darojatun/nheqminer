@@ -1,5 +1,5 @@
-VerusCoin nheqminer v0.8.0
-Using VerusHash v2.0
+VerusCoin nheqminer v0.8.1
+Using VerusHash v2.2
 
 This software needs to be run on a terminal. To find it, open the Applications folder, then open the Utilities folder and finally open the Terminal application. The terminal can also be found using spotlight and searching for “terminal”.
 Once the terminal launches, navigate to the nheqminer directory by running:
