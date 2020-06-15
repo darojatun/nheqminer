@@ -353,17 +353,12 @@ void cpu_verushash::solve_verus_v2_opt(CBlockHeader &bh,
 	std::function<void(void)> hashdonef,
 	cpu_verushash &device_context)
 {
-    if (bh.nSolution.size() && bh.nSolution[0] != device_context.solutionVer)
-    {
-        device_context.stop(device_context);
-        device_context.solutionVer = bh.nSolution[0];
-        device_context.start(device_context);
-    }
-    if (device_context.solutionVer < 5)
-    {
-        bh.nSolution = std::vector<unsigned char>(1344);
-        bh.nSolution[0] = device_context.solutionVer;
-    }
+
+    device_context.stop(device_context);
+    device_context.solutionVer = bh.nSolution[0];
+    device_context.start(device_context);
+    bh.nSolution = std::vector<unsigned char>(1344);
+    bh.nSolution[0] = device_context.solutionVer;
 
 	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b);
 	CVerusHashV2 &vh = vhw.GetState();
