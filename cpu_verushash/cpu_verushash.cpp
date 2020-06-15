@@ -94,7 +94,13 @@ void cpu_verushash::solve_verus_v2(CBlockHeader &bh,
 	std::function<void(void)> hashdonef,
 	cpu_verushash &device_context)
 {
- 
+    if (bh.nSolution.size() && bh.nSolution[0] != device_context.solutionVer)
+    {
+        device_context.stop(device_context);
+        device_context.solutionVer = bh.nSolution[0];
+        device_context.start(device_context);
+    }
+
 	std::vector<unsigned char> solution = std::vector<unsigned char>();
     if (device_context.solutionVer < 6)
     {
