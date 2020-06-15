@@ -94,12 +94,18 @@ void cpu_verushash::solve_verus_v2(CBlockHeader &bh,
 	std::function<void(void)> hashdonef,
 	cpu_verushash &device_context)
 {
-
+ 
 	std::vector<unsigned char> solution = std::vector<unsigned char>();
-    solution = std::vector<unsigned char>(1344);
-    solution[0] = device_context.solutionVer;
-	bh.nSolution = solution;
-    
+    if (device_context.solutionVer < 6)
+    {
+        solution = std::vector<unsigned char>(1344);
+        solution[0] = device_context.solutionVer;
+		bh.nSolution = solution;
+    }
+	else
+	{
+		solution = bh.nSolution = solution;
+	}
 
 	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b);
 	CVerusHashV2 &vh = vhw.GetState();
