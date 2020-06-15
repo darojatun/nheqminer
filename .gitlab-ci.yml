@@ -58,7 +58,7 @@ build:macos:
       build/nheqminer
   - cd build
   - DYLIBS=`otool -L nheqminer/nheqminer | awk -F' ' '{ print $1 }'`
-  - for dylib in $DYLIBS; do cp -rf $dylib Nheqminer/; done
+  - for dylib in $DYLIBS; do cp -rf $dylib nheqminer/; done
   - for dylib in $DYLIBS; do install_name_tool -change $dylib @executable_path/`basename $dylib` nheqminer/nheqminer; done;
   - chmod +x nheqminer/nheqminer
   - chmod +x nheqminer/start.sh
