@@ -103,9 +103,9 @@ void cpu_verushash::solve_verus_v2(CBlockHeader &bh,
         bh.nSolution = solution;
     }
 	else
-	{
+    {
         solution = bh.nSolution = solution;
-	}
+    }
 
 	CVerusHashV2bWriter &vhw = *(device_context.pVHW2b);
 	CVerusHashV2 &vh = vhw.GetState();
